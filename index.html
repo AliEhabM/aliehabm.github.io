@@ -6,17 +6,20 @@
     <title>ORCID Login via Keycloak</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <script src="https://<YOUR_CLOUD_IAM_DOMAIN>/js/keycloak.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.0/dist/keycloak.min.js"></script>
 </head>
-<body class="bg-gray-50 h-screen flex items-center justify-center font-sans">
+<body class="bg-gray-50 h-screen flex flex-col items-center justify-center font-sans">
 
     <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full text-center">
         <h1 class="text-3xl font-bold mb-2 text-gray-800">Research Portal</h1>
         <p class="text-gray-500 mb-8 text-sm">Testing Keycloak + ORCID on GitHub Pages</p>
 
-        <div id="unauthenticated-panel" class="block">
-            <p class="mb-6 text-gray-700">You are currently logged out.</p>
-            <button onclick="login()" class="bg-[#A6CE39] hover:bg-[#8eb02f] text-white font-bold py-3 px-4 rounded w-full transition duration-200 flex justify-center items-center gap-3">
+        <div id="status-message" class="text-sm text-blue-600 mb-4 font-mono animate-pulse">
+            Connecting to Keycloak...
+        </div>
+
+        <div id="unauthenticated-panel" class="hidden">
+            <button onclick="login()" class="bg-[#A6CE39] hover:bg-[#8eb02f] text-white font-bold py-3 px-4 rounded w-full transition duration-200 flex justify-center items-center gap-3 shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-6 h-6 fill-current">
                     <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-82.3 358.5c-48.4 0-77-28-77-80.5s28.6-80.5 77-80.5c34.8 0 60 16 71.6 42.6l-28.5 12.6c-7.3-16.5-22.3-26.4-42.8-26.4-29.6 0-45.7 21.3-45.7 51.7 0 30.6 16.3 52 46.2 52 21.6 0 36.6-10.4 43.4-27.4l28.2 13c-11.8 28.3-37.4 43-72.4 43zm163-54.8c-14.7 18.2-37 28.5-62.5 28.5-44.5 0-76.4-31-76.4-80 0-49.3 32-80.3 76.7-80.3 25.4 0 47.6 10.3 62 28l-23 20.3c-9.6-12.8-23.7-19-38.6-19-27.4 0-45.3 19.3-45.3 51 0 31.5 17.7 51 45.3 51 15.2 0 29.3-6.4 39-19.5l22.8 20z"/>
                 </svg>
@@ -26,62 +29,59 @@
 
         <div id="authenticated-panel" class="hidden text-left">
             <div class="bg-green-50 border border-green-200 rounded p-4 mb-6 text-center">
-                <h2 class="text-lg font-bold text-green-700">Authenticated Successfully!</h2>
+                <h2 class="text-lg font-bold text-green-700">Authenticated!</h2>
             </div>
             
-            <div class="space-y-3 mb-6">
+            <div class="space-y-3 mb-6 bg-gray-50 p-4 rounded border">
                 <p class="text-sm text-gray-600"><strong>Name: </strong> <span id="user-name" class="font-semibold text-gray-900"></span></p>
-                <p class="text-sm text-gray-600"><strong>ORCID / ID: </strong> <span id="user-id" class="font-mono text-gray-900 bg-gray-100 px-1 rounded"></span></p>
+                <p class="text-sm text-gray-600"><strong>Keycloak ID: </strong> <span id="user-id" class="font-mono text-xs text-gray-900 break-all"></span></p>
             </div>
 
-            <button onclick="logout()" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-4 rounded w-full border border-red-200 transition duration-200">
+            <button onclick="logout()" class="bg-white hover:bg-red-50 text-red-600 font-bold py-2 px-4 rounded w-full border border-red-200 transition duration-200">
                 Logout
             </button>
         </div>
     </div>
 
     <script>
-        // 1. Configure Keycloak
-        // UPDATE THESE THREE VALUES TO MATCH YOUR SETUP
+        // 1. Configure your exact Cloud-IAM Setup
         const keycloak = new Keycloak({
-            url: 'https://lemur-17.cloud-iam.com/', // Your Keycloak root URL
-            realm: 'bibalex-keycloak-test',              // Your Keycloak Realm
-            clientId: 'orcid-testing-client'                   // The Client ID you created for GitHub Pages
+            url: 'https://lemur-17.cloud-iam.com', // Your live Cloud-IAM domain
+            realm: 'bibalex-keycloak-test',         // MUST CHANGE THIS: e.g., 'master' or 'orcid-test'
+            clientId: 'orcid-testing-app'          // Your exact Client ID
         });
 
-        // 2. Initialize Keycloak when the page loads
-        // 'check-sso' means it will check the URL for a login code, but won't force a login if not present.
+        const statusMsg = document.getElementById('status-message');
+
+        // 2. Initialize Keycloak
         keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256' }).then(function(authenticated) {
+            statusMsg.classList.add('hidden'); // Hide the loading text
+
             if (authenticated) {
-                // The user is logged in! Hide the login panel, show the auth panel.
-                document.getElementById('unauthenticated-panel').classList.add('hidden');
+                // Show logged-in panel
                 document.getElementById('authenticated-panel').classList.remove('hidden');
                 
-                // Extract data from the token
-                const name = keycloak.tokenParsed.name || keycloak.tokenParsed.preferred_username || "Unknown User";
-                const subjectId = keycloak.tokenParsed.sub; 
-
-                // Inject data into the HTML
-                document.getElementById('user-name').innerText = name;
-                document.getElementById('user-id').innerText = subjectId;
-                
-                console.log("Full Token Payload:", keycloak.tokenParsed);
+                // Print data
+                document.getElementById('user-name').innerText = keycloak.tokenParsed.name || keycloak.tokenParsed.preferred_username || "No Name Found";
+                document.getElementById('user-id').innerText = keycloak.tokenParsed.sub; 
             } else {
-                console.log("User is not authenticated.");
+                // Show login button
+                document.getElementById('unauthenticated-panel').classList.remove('hidden');
             }
         }).catch(function(error) {
-            console.error('Failed to initialize Keycloak', error);
+            console.error('Keycloak initialization failed:', error);
+            statusMsg.innerText = "Error connecting to Keycloak. Check the browser console (F12).";
+            statusMsg.classList.remove('text-blue-600', 'animate-pulse');
+            statusMsg.classList.add('text-red-600', 'font-bold');
         });
 
-        // 3. Define the Login Function
+        // 3. Button Actions
         function login() { 
-            // idpHint tells Keycloak to skip its own login screen and jump directly to the ORCID alias we made
+            // idpHint 'orcid' forces Keycloak to jump straight to your ORCID connection
             keycloak.login({ idpHint: 'orcid' }); 
         }
 
-        // 4. Define the Logout Function
         function logout() { 
-            // This logs the user out of Keycloak and reloads the page
             keycloak.logout(); 
         }
     </script>
