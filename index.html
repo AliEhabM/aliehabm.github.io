@@ -46,26 +46,22 @@
     <script>
         // 1. Configure your exact Cloud-IAM Setup
         const keycloak = new Keycloak({
-            url: 'https://lemur-17.cloud-iam.com', // Your live Cloud-IAM domain
-            realm: 'bibalex-keycloak-test',         // MUST CHANGE THIS: e.g., 'master' or 'orcid-test'
-            clientId: 'orcid-testing-app'          // Your exact Client ID
+            url: 'https://lemur-17.cloud-iam.com', 
+            realm: 'bibalex-keycloak-test',         // MUST CHANGE THIS to your exact realm
+            clientId: 'orcid-testing-app'          
         });
 
         const statusMsg = document.getElementById('status-message');
 
         // 2. Initialize Keycloak
         keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256' }).then(function(authenticated) {
-            statusMsg.classList.add('hidden'); // Hide the loading text
+            statusMsg.classList.add('hidden'); 
 
             if (authenticated) {
-                // Show logged-in panel
                 document.getElementById('authenticated-panel').classList.remove('hidden');
-                
-                // Print data
                 document.getElementById('user-name').innerText = keycloak.tokenParsed.name || keycloak.tokenParsed.preferred_username || "No Name Found";
                 document.getElementById('user-id').innerText = keycloak.tokenParsed.sub; 
             } else {
-                // Show login button
                 document.getElementById('unauthenticated-panel').classList.remove('hidden');
             }
         }).catch(function(error) {
@@ -77,7 +73,6 @@
 
         // 3. Button Actions
         function login() { 
-            // idpHint 'orcid' forces Keycloak to jump straight to your ORCID connection
             keycloak.login({ idpHint: 'orcid' }); 
         }
 
