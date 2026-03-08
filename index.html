@@ -44,9 +44,9 @@
         // 1. Configure Keycloak
         // UPDATE THESE THREE VALUES TO MATCH YOUR SETUP
         const keycloak = new Keycloak({
-            url: 'https://<YOUR_CLOUD_IAM_DOMAIN>/', // Your Keycloak root URL
-            realm: '<YOUR_REALM_NAME>',              // Your Keycloak Realm
-            clientId: 'github-app'                   // The Client ID you created for GitHub Pages
+            url: 'https://lemur-17.cloud-iam.com/', // Your Keycloak root URL
+            realm: 'bibalex-keycloak-test',              // Your Keycloak Realm
+            clientId: 'orcid-testing-client'                   // The Client ID you created for GitHub Pages
         });
 
         // 2. Initialize Keycloak when the page loads
